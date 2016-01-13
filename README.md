@@ -8,30 +8,33 @@ Tested on OS X El Capitan.
 This script will also display system notification and play sound after changing status.
 
 ## Install
-chmod +x status_changer.sh
+
+Run this command from terminal
+<pre>chmod +x status_changer.sh</pre>
 
 While Skype is opened, open terminal and type
-./status_changer.sh "online"
+
+<pre>./status_changer.sh "online"</pre>
 
 Skype will ask you for permissions, please grant those permissions so it can run always.
 
 Than you can set cron job to change status at specific time.
 In OS X terminal type
 
-<code>
+<pre>
 crontab -e
-</code>
+</pre>
 
-For example, here is how I want to change status to online between Monday and Thursday at 3 PM, and on Friday at 8 AM
+For example, here is how I change status to online between Monday and Thursday at 3 PM, and on Friday at 8 AM
 
-<code>
+<pre>
 0 15 * * 1-4 /Users/nenadmilosavljevic/Sites/skype_status_changer/status_changer.sh "online"
 0 08 * * 5 /Users/nenadmilosavljevic/Sites/skype_status_changer/status_changer.sh "online"
-</code>
+</pre>
 
 And than I want to set it to offline between Monday and Thursday at 11:10 PM, and on Friday at 4:10 AM
 
-<code>
+<pre>
 10 23 * * 1-4 /Users/nenadmilosavljevic/Sites/skype_status_changer/status_changer.sh "offline"
 10 16 * * 1-4 /Users/nenadmilosavljevic/Sites/skype_status_changer/status_changer.sh "offline"
-</code>
+</pre>
