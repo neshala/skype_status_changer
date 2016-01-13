@@ -2,6 +2,12 @@
 # filename: Skype Changer
 # usage from Terminal prompt: sh status_changer.sh "Online"
 
+if [ "$#" -ne 1 ]
+then
+  echo "Please provide status as argument."
+  exit 1
+fi
+
 status=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 
 if [ $status != 'online' ] && [ $status != 'away' ] && [ $status != 'dnd' ] && [ $status != 'invisible' ]  && [ $status != 'offline' ]; then
