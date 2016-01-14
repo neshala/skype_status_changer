@@ -36,5 +36,5 @@ And than I want to set it to offline between Monday and Thursday at 11:10 PM, an
 
 <pre>
 10 23 * * 1-4 /Users/nenadmilosavljevic/Sites/skype_status_changer/status_changer.sh "offline"
-10 16 * * 1-4 /Users/nenadmilosavljevic/Sites/skype_status_changer/status_changer.sh "offline"
+10 16 * * 5 /Users/nenadmilosavljevic/Sites/skype_status_changer/status_changer.sh "offline"
 </pre>
