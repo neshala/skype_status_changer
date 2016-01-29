@@ -27,6 +27,16 @@ if (!in_array($new_status, $allowed_statuses)) {
     die("Invalid new status !!!");
 }
 
+// check is Skype running
+$is_running = exec('osascript -e \'
+tell application "System Events"
+    count (every process whose name is "Skype")
+end tell
+\'');
+if (empty($is_running)) {
+    die("Skype is not running. Please open Skype and try again.");
+}
+
 // get current Skype status
 $current_status = exec('osascript -e "tell application \"Skype\" to send command \"GET USERSTATUS\" script name \"my script\""');
 $current_status = str_replace("USERSTATUS ", "", $current_status);
