@@ -21,19 +21,19 @@ $schedule_status = getScheduledStatus($schedule, 'online', 'invisible');
 // if we pass argument in terminal, that will be used instead of scheduled status
 $new_status = isset($argv[1]) ? $argv[1] : $schedule_status;
 
-// check is argument valid
+// check is status valid
 $allowed_statuses = ['online', 'away', 'dnd', 'invisible', 'offline'];
 if (!in_array($new_status, $allowed_statuses)) {
     die("Invalid new status !!!");
 }
 
 // get current Skype status
-$online_status = exec('osascript -e "tell application \"Skype\" to send command \"GET USERSTATUS\" script name \"my script\""');
-$online_status = str_replace("USERSTATUS ", "", $online_status);
-$online_status = strtolower($online_status);
+$current_status = exec('osascript -e "tell application \"Skype\" to send command \"GET USERSTATUS\" script name \"my script\""');
+$current_status = str_replace("USERSTATUS ", "", $current_status);
+$current_status = strtolower($current_status);
 
-if ($new_status == $online_status) {
-    die("Nothing to do, Skype status is already {$online_status}.");
+if ($new_status == $current_status) {
+    die("Nothing to do, Skype status is already {$current_status}.");
 }
 
 // change Skype status
