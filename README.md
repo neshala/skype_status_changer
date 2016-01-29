@@ -3,6 +3,7 @@
 OS X Shell script to automatically change Skype status.
 Using Apple Script this bash script will send command to Skype application if it's running to change user status.
 It can be used via cron job (builtin into OS X), for example to set user status at specific time to online, and for example at the end of work to offline or invisible.
+Also this script can be used to force specific status, by running cron on every 5 minutes between specific hours. This can be useful because sometimes Skype change online status on his own (when you login from other device).
 
 Tested on OS X El Capitan.
 This script will also display system notification and play sound after changing status.
