@@ -1,8 +1,10 @@
 <?php
 /**
  * This script will do the same as status_changer.sh
- * Only additional thing it can do is to use predefined time frames when to change skype status
+ * Main difference is that it can do is to use predefined time frames when to change skype status
  * Bash script language have limits to multidimensional arrays so i picked PHP as language to do that.
+ *
+ * unofficial and deprecated Skype docs is available here http://caxapa.ru/thumbs/460039/SkypeSDK_deprecated.pdf
  */
 
 ### time frame when to change status from default ###
@@ -22,7 +24,7 @@ $schedule_status = getScheduledStatus($schedule, 'online', 'invisible');
 $new_status = isset($argv[1]) ? $argv[1] : $schedule_status;
 
 // check is status valid
-$allowed_statuses = ['online', 'away', 'dnd', 'invisible', 'offline'];
+$allowed_statuses = ['online', 'away', 'dnd', 'invisible', 'offline', 'na'];
 if (!in_array($new_status, $allowed_statuses)) {
     die("Invalid new status !!!");
 }
@@ -35,6 +37,20 @@ end tell
 \'');
 if (empty($is_running)) {
     die("Skype is not running. Please open Skype and try again.");
+}
+
+// check internet connection
+$ping = exec('osascript -e \'
+tell application "System Events" to (name of processes) contains "Skype"
+if the result is true then
+	tell application "Skype"
+		send command "GET CONNSTATUS" script name "Skype Changer"
+	end tell
+end if
+\'');
+
+if (!strstr($ping, "ONLINE")) {
+    die("Check your internet connection, Skype is not able to connect.");
 }
 
 // get current Skype status
