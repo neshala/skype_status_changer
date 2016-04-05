@@ -54,7 +54,7 @@ if (!strstr($ping, "ONLINE")) {
 }
 
 // get current Skype status
-$current_status = exec('osascript -e "tell application \"Skype\" to send command \"GET USERSTATUS\" script name \"my script\""');
+$current_status = exec('osascript -e "tell application \"Skype\" to send command \"GET USERSTATUS\" script name \"Skype Changer\""');
 $current_status = str_replace("USERSTATUS ", "", $current_status);
 $current_status = strtolower($current_status);
 
@@ -62,14 +62,16 @@ if ($new_status == $current_status) {
     die("Nothing to do, Skype status is already {$current_status}.");
 }
 
+$say_msg = "Skype Status changed to {$new_status}. " . getInspireQuote();
+
 // change Skype status
 $command = exec('osascript -e \'
 tell application "System Events" to (name of processes) contains "Skype"
 if the result is true then
 	tell application "Skype"
-		send command "SET USERSTATUS '.$new_status.'" script name "Skype Changer"
-		display notification "Status changed to '.$new_status.'" with title "Skype Changer"
-		say "Skype Status changed to '.$new_status.' "
+		send command "SET USERSTATUS ' . $new_status . '" script name "Skype Changer"
+		display notification "Status changed to ' . $new_status . '" with title "Skype Changer"
+		say " ' . $say_msg . ' "
 	end tell
 end if
 \'');
@@ -116,4 +118,27 @@ function getScheduledStatus($schedule = [], $new_status = '', $default = '')
     }
 
     return $status;
+}
+
+function getInspireQuote()
+{
+    $quote_url = 'https://www.quotesdaddy.com/feed/tagged/Inspirational';
+
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+        CURLOPT_RETURNTRANSFER => 1,
+        CURLOPT_URL => $quote_url
+    ));
+    $resp = curl_exec($curl);
+    curl_close($curl);
+
+    $resp = simplexml_load_string($resp);
+
+    $quote = '';
+    if (isset($resp->channel->item->title)) {
+        $quote = reset($resp->channel->item->title);
+        $quote = str_replace('"', "", $quote);
+    }
+
+    return $quote;
 }
