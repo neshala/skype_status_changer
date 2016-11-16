@@ -1,27 +1,41 @@
 <?php
 /**
  * This script will do the same as status_changer.sh
- * Main difference is that it can do is to use predefined time frames when to change skype status
+ * Main difference is that it can do is to use predefined time frames when to change skype status and we can set mood
+ * text message optional.
  * Bash script language have limits to multidimensional arrays so i picked PHP as language to do that.
  *
- * unofficial and deprecated Skype docs is available here http://caxapa.ru/thumbs/460039/SkypeSDK_deprecated.pdf
+ * unofficial and deprecated Skype Docs is available here http://caxapa.ru/thumbs/460039/SkypeSDK_deprecated.pdf
  */
 
 ### time frame when to change status from default ###
 date_default_timezone_set('Europe/Belgrade');
 $schedule = [
-    '1' => '15:00-23:10',
-    '2' => '15:00-23:10',
-    '3' => '15:00-23:10',
-    '4' => '15:00-23:10',
-    '5' => '08:00-16:10'
+    'monday' => [
+        ['time' => '15:00-23:10', 'status' => 'online', 'mood' => '']
+    ],
+    'tuesday' => [
+        ['time' => '15:10-21:10', 'status' => 'online', 'mood' => ''],
+        ['time' => '21:10-23:00', 'status' => 'dnd', 'mood' => 'I am currently playing soccer match for the company. Please leave a message and I will reply later.'],
+    ],
+    'wednesday' => [
+        ['time' => '15:00-23:10', 'status' => 'online', 'mood' => '']
+    ],
+    'thursday' => [
+        ['time' => '08:00-16:10', 'status' => 'online', 'mood' => '']
+    ],
+    'friday' => [
+        ['time' => '08:00-16:10', 'status' => 'online', 'mood' => '']
+    ]
 ];
 
 // try to figure out status to be used
-$schedule_status = getScheduledStatus($schedule, 'online', 'invisible');
+$schedule_status = getScheduledStatus($schedule, 'invisible');
 
 // if we pass argument in terminal, that will be used instead of scheduled status
-$new_status = isset($argv[1]) ? $argv[1] : $schedule_status;
+$new_status = isset($argv[1]) ? $argv[1] : $schedule_status['status'];
+
+$new_mood_text = $schedule_status['mood'];
 
 // check is status valid
 $allowed_statuses = ['online', 'away', 'dnd', 'invisible', 'offline', 'na'];
@@ -35,6 +49,7 @@ tell application "System Events"
     count (every process whose name is "Skype")
 end tell
 \'');
+
 if (empty($is_running)) {
     die("Skype is not running. Please open Skype and try again.");
 }
@@ -58,11 +73,34 @@ $current_status = exec('osascript -e "tell application \"Skype\" to send command
 $current_status = str_replace("USERSTATUS ", "", $current_status);
 $current_status = strtolower($current_status);
 
-if ($new_status == $current_status) {
+// get current mood
+$current_mood = exec('osascript -e "tell application \"Skype\" to send command \"GET PROFILE MOOD_TEXT\" script name \"Skype Changer\""');
+$current_mood = trim(str_replace("PROFILE MOOD_TEXT", "", $current_mood));
+
+$mood_update_needed = true;
+if ($new_mood_text == $current_mood) {
+    // no need to update
+    $new_mood_text = '';
+    $mood_update_needed = false;
+}
+
+if ($new_status == $current_status && !$mood_update_needed) {
     die("Nothing to do, Skype status is already {$current_status}.");
 }
 
-$say_msg = "Skype Status changed to {$new_status}. " . getInspireQuote();
+$mood_message = '';
+if ($mood_update_needed) {
+    $mood_message = 'send command "SET PROFILE MOOD_TEXT ' . $new_mood_text . '" script name "Skype Changer"';
+}
+
+
+$status_message = "Skype Status changed to {$new_status}. ";
+if ($mood_update_needed) {
+    $mood_say = !empty($new_mood_text) ? $new_mood_text : 'Empty';
+    $status_message .= "Mood updated to {$mood_say}";
+}
+
+//send command
 
 // change Skype status
 $command = exec('osascript -e \'
@@ -70,8 +108,9 @@ tell application "System Events" to (name of processes) contains "Skype"
 if the result is true then
 	tell application "Skype"
 		send command "SET USERSTATUS ' . $new_status . '" script name "Skype Changer"
-		display notification "Status changed to ' . $new_status . '" with title "Skype Changer"
-		say " ' . $say_msg . ' "
+		' . $mood_message . '
+		display notification "' . $status_message . '" with title "Skype Changer"
+		say " ' . $status_message . ' "
 	end tell
 end if
 \'');
@@ -83,33 +122,46 @@ echo "Done !!!";
 /**
  * determinate status based on provided time frames
  * @param array $schedule
- * @param string $new_status will be used if time frame is current
  * @param string $default will be used if no time frame is used
  * @return string status
  */
-function getScheduledStatus($schedule = [], $new_status = '', $default = '')
+function getScheduledStatus($schedule = [], $default = '')
 {
     $status = $default;
+    $mood = '';
 
     $curr_ts = strtotime("now");
-    $current_day_of_week = date("w");
+    $current_day_of_week = strtolower(date("l"));
     $use_default = true;
-    foreach ($schedule as $day_of_week => $times) {
-        if ($day_of_week != $current_day_of_week) {
+    foreach ($schedule as $day_of_week => $config) {
+
+        if (strtolower($day_of_week) != $current_day_of_week) {
+            // not today
             continue;
         }
 
-        $times = explode("-", $times);
-        if (!isset($times[0]) || !isset($times[1])) {
+        if (!is_array($config) || empty($config)) {
             continue;
         }
-        $start_time = strtotime($times[0]);
-        $end_time = strtotime($times[1]);
 
-        if ($curr_ts >= $start_time && $curr_ts <= $end_time) {
-            $status = $new_status;
-            $use_default = false;
-            break;
+        foreach ($config as $item) {
+            $times = $item['time'];
+            $config_status = isset($item['status']) ? $item['status'] : $default;
+            $config_mood = isset($item['mood']) ? $item['mood'] : '';
+
+            $times = explode("-", $times);
+            if (!isset($times[0]) || !isset($times[1])) {
+                continue;
+            }
+            $start_time = strtotime($times[0]);
+            $end_time = strtotime($times[1]);
+
+            if ($curr_ts >= $start_time && $curr_ts <= $end_time) {
+                $status = $config_status;
+                $mood = $config_mood;
+                $use_default = false;
+                break 1;
+            }
         }
     }
 
@@ -117,28 +169,5 @@ function getScheduledStatus($schedule = [], $new_status = '', $default = '')
         $status = $default;
     }
 
-    return $status;
-}
-
-function getInspireQuote()
-{
-    $quote_url = 'https://www.quotesdaddy.com/feed/tagged/Inspirational';
-
-    $curl = curl_init();
-    curl_setopt_array($curl, array(
-        CURLOPT_RETURNTRANSFER => 1,
-        CURLOPT_URL => $quote_url
-    ));
-    $resp = curl_exec($curl);
-    curl_close($curl);
-
-    $resp = simplexml_load_string($resp);
-
-    $quote = '';
-    if (isset($resp->channel->item->title)) {
-        $quote = reset($resp->channel->item->title);
-        $quote = str_replace('"', "", $quote);
-    }
-
-    return $quote;
+    return ['status' => $status, 'mood' => $mood];
 }
